@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>MUKUNDLE</title>
+<style>
+:root{--bg:#fffaf0;--fg:#2a1a0a;--tile:#d9cdb8;--absent:#7a6f60;--present:#e0a000;--correct:#2e9e4f;--key:#e8dcc4;--accent:#e4472b;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1a120a;--fg:#fff1dc;--tile:#4a3b2a;--absent:#2e2519;--key:#5a4833}}
+:root[data-theme="dark"]{--bg:#1a120a;--fg:#fff1dc;--tile:#4a3b2a;--absent:#2e2519;--key:#5a4833}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:"Trebuchet MS",system-ui,sans-serif;display:flex;flex-direction:column;align-items:center;min-height:100vh}
+h1{margin:14px 0 0;font-size:2.2rem;letter-spacing:.12em;color:var(--accent)}
+.sub{font-size:.8rem;opacity:.75;margin:2px 12px 10px;text-align:center}
+#msg{height:26px;font-weight:bold}
+#board{display:grid;grid-template-rows:repeat(6,1fr);gap:6px;margin:6px 0 14px}
+.row{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.t{width:clamp(46px,14vw,60px);aspect-ratio:1;border:2px solid var(--tile);display:flex;align-items:center;justify-content:center;font-size:1.8rem;font-weight:bold;text-transform:uppercase}
+.t.f{border-color:var(--fg)}
+.t.correct,.t.present,.t.absent{color:#fff;border-color:transparent}
+.correct{background:var(--correct)}.present{background:var(--present)}.absent{background:var(--absent)}
+#kb{display:flex;flex-direction:column;gap:6px;align-items:center;max-width:100%;padding:0 4px}
+.kr{display:flex;gap:5px}
+.k{background:var(--key);color:var(--fg);border:0;border-radius:6px;min-width:clamp(26px,8vw,40px);height:50px;font-weight:bold;font-size:.95rem;cursor:pointer;padding:0 6px}
+.k.wide{min-width:clamp(44px,13vw,64px)}
+.k.correct,.k.present,.k.absent{color:#fff}
+#end{display:none;text-align:center;margin:14px;padding:12px 18px;border:2px solid var(--accent);border-radius:12px;max-width:340px}
+#end button{background:var(--accent);color:#fff;border:0;border-radius:8px;padding:8px 16px;font-weight:bold;cursor:pointer;margin-top:8px}
+@keyframes sh{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.shake{animation:sh .3s}
+</style></head><body>
+<h1>MUKUNDLE</h1>
+<div class="sub">One word a day. Every answer is junk food or a fat word. No salad here.</div>
+<div id="msg"></div>
+<div id="board"></div>
+<div id="kb"></div>
+<div id="end"><div id="endtxt"></div><button onclick="share()">Share score</button></div>
+<script>
+const W=[
+["PIZZA","🍕 Junk food"],["FRIES","🍟 Junk food"],["DONUT","🍩 Junk food"],["NACHO","🍟 Junk food"],["TACOS","🌮 Junk food"],["CANDY","🍬 Junk food"],["CHIPS","🍟 Junk food"],["MOMOS","🥟 Junk food"],["ROLLS","🌯 Junk food"],["FUDGE","🍫 Junk food"],["BAGEL","🥯 Junk food"],["CREAM","🍦 Junk food"],["OREOS","🍪 Junk food"],["SODAS","🥤 Junk food"],["MAGGI","🍜 Junk food"],["CHAAT","🥗 Junk food"],["LADOO","🟠 Junk food"],["KULFI","🍨 Junk food"],["PAPAD","🫓 Junk food"],["KEBAB","🍢 Junk food"],["SHAKE","🥤 Junk food"],["WINGS","🍗 Junk food"],["PASTA","🍝 Junk food"],["BURFI","🍬 Junk food"],["PURIS","🫓 Junk food"],["VADAS","🍩 Junk food"],["GRAVY","🍛 Junk food"],["CAKES","🎂 Junk food"],["TIKKA","🍢 Junk food"],["SAUCE","🍅 Junk food"],
+["THICC","🍑 Fat word"],["CHUNK","🍑 Fat word"],["PORKY","🐖 Fat word"],["PLUMP","🍑 Fat word"],["STOUT","🍑 Fat word"],["HUSKY","🍑 Fat word"],["HEFTY","🍑 Fat word"],["BULKY","🍑 Fat word"],["BELLY","🍑 Fat word"],["TUMMY","🍑 Fat word"],["TORTA","🍑 Fat word"],["PUDGY","🍑 Fat word"],["BLOAT","🍑 Fat word"],["FATTY","🍑 Fat word"],["GIRTH","🍑 Fat word"],["JUMBO","🍑 Fat word"],["BEEFY","🍑 Fat word"],["TUBBY","🍑 Fat word"],["BULGE","🍑 Fat word"],["HEAVY","🍑 Fat word"],["ROUND","🍑 Fat word"],["GUTSY","🍑 Fat word"],["STUFF","🍑 Fat word"]
+];
+let ans,cat,row,col,grid,over,keys={};
+const board=document.getElementById('board'),kb=document.getElementById('kb'),msg=document.getElementById('msg');
+function build(){board.innerHTML='';grid=[];for(let r=0;r<6;r++){const d=document.createElement('div');d.className='row';grid.push([]);for(let c=0;c<5;c++){const t=document.createElement('div');t.className='t';d.appendChild(t);grid[r].push(t)}board.appendChild(d)}
+kb.innerHTML='';["QWERTYUIOP","ASDFGHJKL","+ZXCVBNM-"].forEach(s=>{const d=document.createElement('div');d.className='kr';[...s].forEach(ch=>{const b=document.createElement('button');b.className='k';b.dataset.k=ch;b.textContent=ch=='+'?'ENTER':ch=='-'?'⌫':ch;if('+-'.includes(ch))b.classList.add('wide');b.onclick=()=>press(ch=='+'?'Enter':ch=='-'?'Backspace':ch);d.appendChild(b)});kb.appendChild(d)})}
+const EP=new Date(2026,9,25);let DAY,hist=[],saved=[],tm;
+function dayNo(){const n=new Date();return Math.floor((new Date(n.getFullYear(),n.getMonth(),n.getDate())-EP)/864e5)}
+function store(){try{localStorage.setItem('mukundle',JSON.stringify({d:DAY,g:saved}))}catch(e){}}
+function share(){const em={correct:'🟩',present:'🟨',absent:'⬛'};const win=saved[saved.length-1]===ans;const t='MUKUNDLE #'+(DAY+1)+' '+(win?saved.length:'X')+'/6\n'+hist.map(r=>r.map(x=>em[x]).join('')).join('\n');if(navigator.share){navigator.share({text:t}).catch(()=>{})}else{try{navigator.clipboard.writeText(t).then(()=>toast('Copied. Go flex.'),()=>toast('Copy failed, screenshot it'))}catch(e){toast('Copy failed, screenshot it')}}}
+function tick(){clearInterval(tm);const f=()=>{const n=new Date(),nx=new Date(n.getFullYear(),n.getMonth(),n.getDate()+1),s=Math.floor((nx-n)/1000),el=document.getElementById('nx');if(el)el.textContent='Next word in '+String(Math.floor(s/3600)).padStart(2,'0')+':'+String(Math.floor(s%3600/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');if(DAY!==dayNo())start()};f();tm=setInterval(f,1000)}
+function start(){DAY=dayNo();const i=(((DAY*17)%W.length)+W.length)%W.length;[ans,cat]=W[i];row=0;col=0;over=false;keys={};hist=[];saved=[];msg.textContent='';document.getElementById('end').style.display='none';build();let s=null;try{s=JSON.parse(localStorage.getItem('mukundle'))}catch(e){}if(s&&s.d===DAY&&Array.isArray(s.g)){s.g.forEach(w=>{[...w].forEach(ch=>press(ch));press('Enter')})}}
+function toast(t){msg.textContent=t}
+function press(k){if(over)return;
+if(k=='Backspace'){if(col>0){grid[row][--col].textContent='';grid[row][col].classList.remove('f')}}
+else if(k=='Enter'){if(col<5){toast('Need 5 letters, bro');const e=board.children[row];e.classList.remove('shake');void e.offsetWidth;e.classList.add('shake');return}submit()}
+else if(/^[a-zA-Z]$/.test(k)&&col<5){const t=grid[row][col++];t.textContent=k.toUpperCase();t.classList.add('f');toast('')}}
+function submit(){const g=grid[row].map(t=>t.textContent),res=Array(5).fill('absent'),left={};
+for(let i=0;i<5;i++){if(g[i]==ans[i])res[i]='correct';else left[ans[i]]=(left[ans[i]]||0)+1}
+for(let i=0;i<5;i++){if(res[i]!='correct'&&left[g[i]]>0){res[i]='present';left[g[i]]--}}
+const rank={absent:0,present:1,correct:2};
+g.forEach((ch,i)=>{grid[row][i].className='t '+res[i];if(!keys[ch]||rank[res[i]]>rank[keys[ch]])keys[ch]=res[i];const kEl=kb.querySelector('[data-k="'+ch+'"]');if(kEl)kEl.className='k '+keys[ch]});
+hist.push(res);saved.push(g.join(''));store();if(g.join('')==ans){finish(true)}else if(row==5){finish(false)}else{row++;col=0}}
+function finish(win){over=true;const e=document.getElementById('end');e.style.display='block';
+document.getElementById('endtxt').innerHTML=(win?'🎉 Got it in '+(row+1)+'/6. Mukund approves.':'💀 It was <b>'+ans+'</b>. Skill issue.')+'<br>'+cat+'<br><small id="nx"></small>';tick()}
+document.addEventListener('keydown',e=>{if(e.ctrlKey||e.metaKey||e.altKey)return;press(e.key)});
+start();
+</script></body></html>
